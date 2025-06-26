@@ -105,16 +105,18 @@ class BayesClassifier(_BayesClassifier):
         self.accuracy_cache = dict()
 
     def test(self, test_df, accuracy_only=True):
-        eval_classes = super().test(test_df)
-        self.eval_classes_cache[test_df] = eval_classes
+        hash_of_df = str(test_df.to_dict())
+        if not hash_of_df in self.eval_classes_cache:
+            eval_classes = super().test(test_df)
+            self.eval_classes_cache[hash_of_df] = eval_classes
 
-        test_classes = test_df["class"].reset_index(drop=True)
-        self.accuracy_cache[test_df] = (eval_classes == test_classes).value_counts()
+            test_classes = test_df["class"].reset_index(drop=True)
+            self.accuracy_cache[hash_of_df] = (eval_classes == test_classes).value_counts()
 
         if accuracy_only:
-            return self.accuracy_cache[test_df]
+            return self.accuracy_cache[hash_of_df]
         else:
-            return self.eval_classes_cache[test_df]
+            return self.eval_classes_cache[hash_of_df]
 
 
     def get_accuracy(self, test_df: pd.DataFrame) -> float:
