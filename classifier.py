@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from functools import reduce
+from operator import mul, add
 from collections import Counter
 
 factorial_cache = {1 : 1}
@@ -45,25 +47,25 @@ class _BayesClassifier:
     @ensure_frequencies
     def prob_features_given_class(self, features: dict[str, int], class_: str) -> float:
         # remove n! from multinomial PMF since we're just comparing
-        features = {word : value for word, value in features.items() if word in self.word_probs[class_].keys()}
+        features = {word : value for word, value in features.items() if word in self.word_probs[class_].keys() and value > 0}
         if len(features.keys()) == 0: # quite unique to have no words in common with training data
             return 0
 
         words = list(features.keys())
         counts = list(features.values())
 
-        factor = 1 / np.prod([factorial(count) for count in counts])
-        prob = np.prod(np.array([self.word_probs[class_][words[i]] ** c_i for i, c_i in enumerate(counts)]))
+        factor = 1 / reduce(mul, [factorial(count) for count in counts])
+        prob = np.sum([self.word_probs[class_][words[i]] * c_i for i, c_i in enumerate(counts)])
         return factor * prob
 
     def prob_classes_given_features(self, features: dict[str, int]):
-        return np.array([self.prob_class_given_features(features, class_) for class_ in self.class_labels])
+        return np.array([
+            self.prob_class_given_features(features, class_) for class_ in self.class_labels])
 
     def train(self, train_df: pd.DataFrame):
         # prepare class_probs
         class_probs = train_df["class"].value_counts(normalize=True)
-        for i, class_label in enumerate(self.class_labels):
-            self.class_probs[class_label] = class_probs[class_label]
+        self.class_probs = {class_label: class_probs[class_label] for class_label in self.class_labels}
 
         counters = [Counter() for _ in range(self.num_classes)]
         for i, row in train_df.iterrows():
@@ -76,8 +78,7 @@ class _BayesClassifier:
             for word in counter.keys():
                 # prob = counter[word] / counter.total()
                 prob = 1 / len(set(counter.keys()))
-                # self.word_probs[word] = prob * counter[word]
-                self.word_probs[class_][word] = prob
+                self.word_probs[class_][word] = np.log(prob)
 
     def evaluate(self, *features):
         return [self.prob_classes_given_features(feature_vector) for feature_vector in features]
