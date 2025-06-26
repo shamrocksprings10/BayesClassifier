@@ -1,18 +1,16 @@
 from classifier import BayesClassifier
-from clean_data import get_spam_collection_df
+from clean_data import split_train_test
 import pandas as pd
 
-df = get_spam_collection_df()
-df = df.sample(frac=1) # shuffled order
+def get_accuracy(model: BayesClassifier, test_df: pd.DataFrame) -> float:
+    results = model.test(test_df, accuracy_only=True)
+    accuracy = results.loc[True] / results.sum()
+    return accuracy
 
-train_size = int(0.8 * len(df))
-train_df = df[:train_size]
-test_df = df[train_size:]
+if __name__ == "__main__":
+    train_df, test_df, class_labels = split_train_test()
+    model = BayesClassifier(class_labels)
+    model.train(train_df)
+    print(model.class_probs)
+    print(f"Accuracy: {get_accuracy(model, test_df):0.2%}")
 
-model = BayesClassifier(["ham", "spam"])
-model.train(train_df)
-
-results = model.test(test_df)
-print(results)
-accuracy = results.loc[True] / results.sum()
-print(f"Accuracy: {accuracy:.2%}")
