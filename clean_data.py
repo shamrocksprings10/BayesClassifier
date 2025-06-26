@@ -20,8 +20,7 @@ def get_document_collection_df():
     return pd.DataFrame(rows, columns=["class", "words"])
 
 def split_train_test(percent_train:float=0.8) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
-    df = get_document_collection_df()
-    df = df.sample(frac=1)  # shuffled order
+    df = get_document_collection_df().sample(frac=1)  # shuffled order
 
     train_size = int(0.8 * len(df))
     train_df = df[:train_size]
