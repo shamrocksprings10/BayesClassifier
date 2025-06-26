@@ -34,6 +34,14 @@ def ensure_frequencies(function):
     return wrapped
 
 class _BayesClassifier:
+    """
+    Simplifications made to the model, these don't compromise in classification.
+    Usage of log probabilities so float underflow can't happen.
+    Scaling factors such as p(X_vector) in prob_class_given_features() and n!
+    in prob_features_given_class().
+    Since we only care about the maximum probability for Class i, these changes won't
+    affect the ordering of p(C_i | X_vector).
+    """
     def __init__(self, class_labels: list[str]):
         self.class_labels = class_labels
         self.num_classes = len(class_labels)
