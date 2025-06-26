@@ -14,3 +14,5 @@ model.train(train_df)
 
 results = model.test(test_df)
 print(results)
+accuracy = results.loc[True] / results.sum()
+print(f"Accuracy: {accuracy:.2%}")

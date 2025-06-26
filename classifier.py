@@ -53,6 +53,9 @@ class _BayesClassifier:
         # remove n! from multinomial PMF since we're just comparing
         features = {key : value for key, value in features.items() if f"{key}|{class_}" in self.word_probs.keys()}
 
+        if len(features.keys()) == 0: # defaults to ham since it must be quite unique to have no words in common with training data
+            return 0
+
         words = list(features.keys())
         counts = list(features.values())
 
