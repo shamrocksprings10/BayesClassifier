@@ -11,3 +11,6 @@ test_df = df[train_size:]
 
 model = BayesClassifier(["ham", "spam"])
 model.train(train_df)
+
+results = model.test(test_df)
+print(results)
