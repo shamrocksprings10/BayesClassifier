@@ -81,7 +81,9 @@ class _BayesClassifier:
         for i, class_ in enumerate(self.class_labels):
             counter = counters[i]
             for word in counter.keys():
-                self.word_probs[f"{word}|{class_}"] = counter[word] / counter.total()
+                prob = counter[word] / counter.total()
+                if prob < 5e-10: # basic threshold, didn't find a compromise in accuracy
+                    self.word_probs[f"{word}|{class_}"] = prob
 
     def evaluate(self, *features):
         return [self.prob_classes_given_features(feature_vector) for feature_vector in features]
