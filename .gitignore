@@ -1,8 +1,9 @@
 #JETBRAINS project files
 .idea/*.xml
 .idea
-
-
+*.iml
+*.xml
+.venv
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
