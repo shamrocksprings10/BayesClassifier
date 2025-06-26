@@ -89,13 +89,10 @@ class _BayesClassifier:
     def evaluate(self, *features):
         return [self.prob_classes_given_features(feature_vector) for feature_vector in features]
 
-    def test(self, test_df, accuracy_only=False):
+    def test(self, test_df):
         evaluations = self.evaluate(*test_df["words"].to_list())
         predicted_class = list(map(lambda probs: self.class_labels[int(np.argmax(probs))], evaluations))
         eval_classes = pd.Series(predicted_class)
-        if accuracy_only:
-            test_classes = test_df["class"].reset_index(drop=True)
-            return (eval_classes == test_classes).value_counts()
         return eval_classes
 
 class BayesClassifier(_BayesClassifier):
@@ -104,6 +101,21 @@ class BayesClassifier(_BayesClassifier):
     """
     def __init__(self, class_labels: list[str]):
         super().__init__(class_labels)
+        self.eval_classes_cache = dict()
+        self.accuracy_cache = dict()
+
+    def test(self, test_df, accuracy_only=True):
+        eval_classes = super().test(test_df)
+        self.eval_classes_cache[test_df] = eval_classes
+
+        test_classes = test_df["class"].reset_index(drop=True)
+        self.accuracy_cache[test_df] = (eval_classes == test_classes).value_counts()
+
+        if accuracy_only:
+            return self.accuracy_cache[test_df]
+        else:
+            return self.eval_classes_cache[test_df]
+
 
     def get_accuracy(self, test_df: pd.DataFrame) -> float:
         results = self.test(test_df, accuracy_only=True)
