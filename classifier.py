@@ -32,35 +32,28 @@ def ensure_frequencies(function):
     return wrapped
 
 class _BayesClassifier:
-    def __init__(self, class_labels: list[str], num_classes: int = 2):
+    def __init__(self, class_labels: list[str]):
         self.class_labels = class_labels
-        self.num_classes = num_classes
+        self.num_classes = len(class_labels)
         self.class_probs: dict[str, float] = {class_: 0 for class_ in class_labels}
-        self.word_probs = dict()  # key = word|class, value = prob
-
-    def prob_word_given_class(self, word: str, class_: str) -> float:
-        return self.word_probs[f"{word}|{class_}"]
-
-    def prob_class(self, class_: str) -> float:
-        return self.class_probs[class_]
+        self.word_probs = {class_ : dict() for class_ in self.class_labels}  # [class][word] = prob
 
     def prob_class_given_features(self, features: dict[str, int], class_: str) -> float:
         # bayes theorem, remove p(x) from denominator since we the only care about comparison
-        return self.prob_class(class_) * self.prob_features_given_class(features, class_)
+        return self.class_probs[class_] * self.prob_features_given_class(features, class_)
 
     @ensure_frequencies
     def prob_features_given_class(self, features: dict[str, int], class_: str) -> float:
         # remove n! from multinomial PMF since we're just comparing
-        features = {key : value for key, value in features.items() if f"{key}|{class_}" in self.word_probs.keys()}
-
-        if len(features.keys()) == 0: # defaults to ham since it must be quite unique to have no words in common with training data
+        features = {word : value for word, value in features.items() if word in self.word_probs[class_].keys()}
+        if len(features.keys()) == 0: # quite unique to have no words in common with training data
             return 0
 
         words = list(features.keys())
         counts = list(features.values())
 
         factor = 1 / np.prod([factorial(count) for count in counts])
-        prob = np.prod(np.array([self.prob_word_given_class(words[i], class_) ** c_i for i, c_i in enumerate(counts)]))
+        prob = np.prod(np.array([self.word_probs[class_][words[i]] ** c_i for i, c_i in enumerate(counts)]))
         return factor * prob
 
     def prob_classes_given_features(self, features: dict[str, int]):
@@ -70,7 +63,7 @@ class _BayesClassifier:
         # prepare class_probs
         class_probs = train_df["class"].value_counts(normalize=True)
         for i, class_label in enumerate(self.class_labels):
-            self.class_probs[i] = class_probs[class_label]
+            self.class_probs[class_label] = class_probs[class_label]
 
         counters = [Counter() for _ in range(self.num_classes)]
         for i, row in train_df.iterrows():
@@ -81,20 +74,24 @@ class _BayesClassifier:
         for i, class_ in enumerate(self.class_labels):
             counter = counters[i]
             for word in counter.keys():
-                prob = counter[word] / counter.total()
-                if prob < 5e-10: # basic threshold, didn't find a compromise in accuracy
-                    self.word_probs[f"{word}|{class_}"] = prob
+                # prob = counter[word] / counter.total()
+                prob = 1 / len(set(counter.keys()))
+                # self.word_probs[word] = prob * counter[word]
+                self.word_probs[class_][word] = prob
 
     def evaluate(self, *features):
         return [self.prob_classes_given_features(feature_vector) for feature_vector in features]
 
-    def test(self, test_df):
+    def test(self, test_df, accuracy_only=False):
         evaluations = self.evaluate(*test_df["words"].to_list())
         predicted_class = list(map(lambda probs: self.class_labels[int(np.argmax(probs))], evaluations))
         eval_classes = pd.Series(predicted_class)
-        test_classes = test_df["class"].reset_index(drop=True)
-        return (eval_classes == test_classes).value_counts()
+        if accuracy_only:
+            test_classes = test_df["class"].reset_index(drop=True)
+            print(eval_classes, test_classes)
+            return (eval_classes == test_classes).value_counts()
+        return eval_classes
 
 class BayesClassifier(_BayesClassifier):
-    def __init__(self, class_labels: list[str], num_classes: int = 2):
-        super().__init__(class_labels, num_classes)
+    def __init__(self, class_labels: list[str]):
+        super().__init__(class_labels)
