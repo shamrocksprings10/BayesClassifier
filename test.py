@@ -1,16 +1,23 @@
 from classifier import BayesClassifier
 from clean_data import split_train_test
-import pandas as pd
+import unittest
 
-def get_accuracy(model: BayesClassifier, test_df: pd.DataFrame) -> float:
-    results = model.test(test_df, accuracy_only=True)
-    accuracy = results.loc[True] / results.sum()
-    return accuracy
+class BayesClassifierTest(unittest.TestCase):
+    def setUp(self):
+        self.train_df, self.test_df, self.class_labels = split_train_test()
+        self.model = BayesClassifier(self.class_labels)
+        self.model.train(self.train_df)
+        self.confusion_matrix = self.model.confusion_matrix(self.test_df)
+
+    def test_overall_accuracy(self):
+        return self.assertGreaterEqual(self.model.get_accuracy(self.test_df), 0.8, "Model has bad overall accuracy.")
+
+    def test_accuracy_by_class(self):
+        for class_label in self.model.class_labels:
+            with self.subTest(class_label=class_label):
+                self.class_column = self.confusion_matrix[class_label]
+                accuracy = self.class_column[class_label] / self.class_column.sum()
+                self.assertGreaterEqual(accuracy, 0.7, f"Model has bad accuracy for class '{class_label}'.")
 
 if __name__ == "__main__":
-    train_df, test_df, class_labels = split_train_test()
-    model = BayesClassifier(class_labels)
-    model.train(train_df)
-    print(model.class_probs)
-    print(f"Accuracy: {get_accuracy(model, test_df):0.2%}")
-
+    unittest.main()
