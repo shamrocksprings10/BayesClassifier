@@ -49,15 +49,14 @@ class _BayesClassifier:
         self.word_probs = {class_ : dict() for class_ in self.class_labels}  # [class][word] = prob
 
     def prob_class_given_features(self, features: dict[str, int], class_: str) -> float:
-        # bayes theorem, remove p(x) from denominator since we the only care about comparison
         return self.class_probs[class_] * self.prob_features_given_class(features, class_)
 
     @ensure_frequencies
     def prob_features_given_class(self, features: dict[str, int], class_: str) -> float:
-        # remove n! from multinomial PMF since we're just comparing
         features = {word : value for word, value in features.items() if word in self.word_probs[class_].keys() and value > 0}
-        if len(features.keys()) == 0: # quite unique to have no words in common with training data
-            return 0
+        if len(features.keys()) == 0:
+            # quite unique to have no words in common with training data (VERY rare)
+            return 0.5
 
         words = list(features.keys())
         counts = list(features.values())
@@ -71,7 +70,6 @@ class _BayesClassifier:
             self.prob_class_given_features(features, class_) for class_ in self.class_labels])
 
     def train(self, train_df: pd.DataFrame):
-        # prepare class_probs
         class_probs = train_df["class"].value_counts(normalize=True)
         self.class_probs = {class_label: class_probs[class_label] for class_label in self.class_labels}
 
@@ -97,10 +95,32 @@ class _BayesClassifier:
         eval_classes = pd.Series(predicted_class)
         if accuracy_only:
             test_classes = test_df["class"].reset_index(drop=True)
-            print(eval_classes, test_classes)
             return (eval_classes == test_classes).value_counts()
         return eval_classes
 
 class BayesClassifier(_BayesClassifier):
+    """
+    Wrapper class of _BayesClassifier.
+    """
     def __init__(self, class_labels: list[str]):
         super().__init__(class_labels)
+
+    def get_accuracy(self, test_df: pd.DataFrame) -> float:
+        results = self.test(test_df, accuracy_only=True)
+        accuracy = results.loc[True] / results.sum()
+        return accuracy
+
+    def confusion_matrix(self, test_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Actual classes will be the columns, predicted classes will be the rows
+        """
+        eval_classes = self.test(test_df)
+        test_classes = test_df["class"].reset_index(drop=True)
+        confusion_matrix = pd.DataFrame(data=np.zeros((self.num_classes, self.num_classes), dtype=int), columns=self.class_labels, index=self.class_labels)
+
+        for i, test_class in test_classes.items():
+            eval_class = eval_classes[i]
+            actual_class_column = confusion_matrix[test_class]
+            actual_class_column.loc[eval_class] += 1
+
+        return confusion_matrix
