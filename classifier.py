@@ -42,4 +42,4 @@ class _BayesClassifier:
 
 class BayesClassifier(_BayesClassifier):
     def __init__(self, class_labels: list[str], num_classes: int = 2):
-        super().__init__(self, class_labels, num_classes)
+        super().__init__(class_labels, num_classes)
