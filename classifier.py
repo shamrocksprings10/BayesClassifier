@@ -104,7 +104,7 @@ class BayesClassifier(_BayesClassifier):
         self.eval_classes_cache = dict()
         self.accuracy_cache = dict()
 
-    def test(self, test_df, accuracy_only=True):
+    def test(self, test_df, accuracy_only=False):
         hash_of_df = str(test_df.to_dict())
         if not hash_of_df in self.eval_classes_cache:
             eval_classes = super().test(test_df)
@@ -123,6 +123,10 @@ class BayesClassifier(_BayesClassifier):
         results = self.test(test_df, accuracy_only=True)
         accuracy = results.loc[True] / results.sum()
         return accuracy
+
+    def get_accuracy_by_class(self, test_df: pd.DataFrame, class_: str) -> float:
+        class_column = self.confusion_matrix(test_df)[class_]
+        return class_column[class_] / class_column.sum()
 
     def confusion_matrix(self, test_df: pd.DataFrame) -> pd.DataFrame:
         """

@@ -15,8 +15,7 @@ class BayesClassifierTest(unittest.TestCase):
     def test_accuracy_by_class(self):
         for class_label in self.model.class_labels:
             with self.subTest(class_label=class_label):
-                self.class_column = self.confusion_matrix[class_label]
-                accuracy = self.class_column[class_label] / self.class_column.sum()
+                accuracy = self.model.get_accuracy_by_class(self.test_df, class_label)
                 self.assertGreaterEqual(accuracy, 0.7, f"Model has bad accuracy for class '{class_label}'.")
 
 if __name__ == "__main__":
