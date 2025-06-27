@@ -1,25 +1,4 @@
-body {
-    padding: 10%;
-    padding-top: 2%;
-    font-family: Helvetica;
-}
-
 div.data-viewer {
-    width:40%;
-    height: 240px;
-    border: 1px solid grey;
+    height:14lh;
     overflow-y: scroll;
-    font-family: monospace;
-}
-
-span.result-row span {
-    font-weight: bolder;
-}
-
-span.correct {
-    color: green;
-}
-
-span.incorrect {
-    color: red;
 }

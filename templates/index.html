@@ -1,31 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="theme-light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bayes Classifier</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
     <link rel="stylesheet" href="{{ url_for("static", filename="style.css") }}">
 </head>
-<body>
-    <h1>Bayes Classifier</h1>
-
-    <div class="data-viewer">
-        {% for i, row in test.iterrows() %}
-            {% set evaluated_class = evals.iloc[loop.index] %}
-            <span class="result-row">
-                <span class="
-                    {% if evaluated_class == row["class"] %}
-                        correct
-                    {% else %}
-                        incorrect
-                    {% endif %}">
-                    {{ row["class"] }}
-                </span>
-                {{ row["words"] | join(" ")  }}
-            </span><br>
-        {% endfor %}
+<body class="p-6 pt-1">
+    <h1 class="is-size-1">Bayes Classifier</h1>
+    <div class="columns">
+        <div class="column">
+            <div class="is-size-4">Accuracy: {{ "%.2f" % (model.get_accuracy(test) * 100) }}%</div>
+            <div class="mt-auto columns">
+                <div class="column has-text-centered is-size-6 has-text-weight-bold">Actual</div>
+            </div>
+            <div class="columns">
+                {{ model.confusion_matrix(test).to_html(classes=["table", "is-fullwidth", "is-hoverable", "is-bordered", "p-0"]) | safe }}
+            </div>
+        </div>
+        <div class="column">
+            <div class="textarea data-viewer">
+                {% for i, row in merged.iterrows() %}
+                    <div class="result-row">
+                        <span class="has-text-weight-bold {% if row["predicted"] %}has-text-success{% else %}has-text-danger{% endif %}">
+                            {{ row["class"] }}
+                        </span>
+                        {{ test.iloc[i]["words"] | join(" ") | truncate(65)  }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
-
-
 </body>
 </html>
